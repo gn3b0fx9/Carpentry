@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Cut List</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<meta name="theme-color" content="#17191c">
+<style>
+:root{--bg:#f2f3f0;--card:#fff;--ink:#16181b;--mute:#6b7076;--line:#e2e4df;--tape:#f4c430;--tape-ink:#16181b;--w1:#dcae72;--w2:#c9945a;--cut:#16181b;--bad:#c2391f;--off:#e9e6dc}
+@media(prefers-color-scheme:dark){:root{--bg:#101214;--card:#1a1d20;--ink:#eef0ee;--mute:#8b9198;--line:#2b2f33;--w1:#b98a4f;--w2:#a4753f;--cut:#f4c430;--off:#24272b}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html{color-scheme:light dark}
+body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.4 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;font-variant-numeric:tabular-nums;padding:calc(env(safe-area-inset-top) + 8px) 16px calc(env(safe-area-inset-bottom) + 96px)}
+main{max-width:560px;margin:0 auto}
+header{display:flex;align-items:center;gap:10px;padding:12px 0 16px}
+header svg{width:36px;height:36px;border-radius:9px;flex:none}
+h1{font-size:24px;letter-spacing:-.02em;margin:0}
+.card{background:var(--card);border-radius:16px;padding:16px;margin-bottom:12px;box-shadow:0 1px 2px rgba(0,0,0,.05)}
+.hd{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+h2{font-size:15px;font-weight:650;margin:0}
+.hint{font-size:13px;color:var(--mute)}
+.seg{display:flex;background:var(--bg);border-radius:10px;padding:3px}
+.seg button{border:0;background:none;color:var(--mute);font:inherit;font-size:14px;font-weight:600;padding:6px 14px;border-radius:8px;min-height:32px}
+.seg button[aria-pressed=true]{background:var(--card);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.f{position:relative}
+.f span{position:absolute;left:12px;top:7px;font-size:11px;color:var(--mute);pointer-events:none}
+.f i{position:absolute;right:12px;bottom:11px;font-style:normal;font-size:13px;color:var(--mute);pointer-events:none}
+input{width:100%;font:inherit;font-size:18px;font-weight:600;color:var(--ink);background:var(--bg);border:2px solid transparent;border-radius:12px;padding:22px 34px 6px 12px;min-height:56px}
+input:focus{outline:0;border-color:var(--tape)}
+.part{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+.part .f{flex:1}
+.step{display:flex;align-items:center;background:var(--bg);border-radius:12px;height:56px}
+.step button{width:40px;height:56px;border:0;background:none;color:var(--ink);font-size:22px}
+.step b{min-width:26px;text-align:center;font-size:18px}
+.del{width:40px;height:56px;border:0;background:none;color:var(--mute);font-size:20px;border-radius:12px}
+.add{width:100%;min-height:48px;border:2px dashed var(--line);background:none;color:var(--mute);font:inherit;font-weight:600;border-radius:12px}
+button:focus-visible{outline:3px solid var(--tape);outline-offset:2px}
+.empty{text-align:center;color:var(--mute);padding:24px 8px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px}
+.stat{background:var(--bg);border-radius:12px;padding:10px 12px}
+.stat b{display:block;font-size:24px;letter-spacing:-.02em}
+.stat small{color:var(--mute);font-size:12px}
+.board{margin-bottom:14px}
+.bh{display:flex;justify-content:space-between;font-size:13px;color:var(--mute);margin-bottom:5px}
+.bh b{color:var(--ink)}
+.bar{display:flex;height:40px;border-radius:8px;overflow:hidden;background:repeating-linear-gradient(-45deg,var(--off) 0 6px,transparent 6px 12px)}
+.bar .p{background:var(--w1);border-right:3px solid var(--cut);color:#16181b;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;overflow:hidden;white-space:nowrap}
+.bar .p:nth-child(even){background:var(--w2)}
+.err{color:var(--bad);font-weight:600;margin:0}
+.dock{position:fixed;left:0;right:0;bottom:0;padding:10px 16px calc(env(safe-area-inset-bottom) + 10px);background:var(--ink);color:var(--bg);display:none}
+.dock.on{display:block}
+.dock div{max-width:560px;margin:0 auto;display:flex;justify-content:space-between;align-items:center}
+.dock strong{font-size:17px}
+.dock a{background:var(--tape);color:var(--tape-ink);font-weight:700;text-decoration:none;padding:10px 16px;border-radius:10px}
+.proj{margin-left:auto;min-height:40px;padding:0 14px;border:0;border-radius:10px;background:var(--card);color:var(--ink);font:inherit;font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.pill{min-height:36px;padding:0 14px;border:0;border-radius:10px;background:var(--tape);color:var(--tape-ink);font:inherit;font-weight:700}
+dialog{width:min(92vw,520px);border:0;border-radius:20px;padding:16px;background:var(--card);color:var(--ink);margin:auto auto 0;margin-bottom:max(12px,env(safe-area-inset-bottom))}
+dialog::backdrop{background:rgba(0,0,0,.45)}
+.sv{display:flex;gap:8px;margin-bottom:14px}
+.sv .f{flex:1}
+.sv input{padding:6px 12px;font-size:16px}
+.pr{display:flex;align-items:center;gap:4px;margin-bottom:6px}
+.po{flex:1;text-align:left;border:0;background:var(--bg);color:var(--ink);font:inherit;border-radius:12px;padding:10px 14px;min-height:56px}
+.po b{display:block}.po small{color:var(--mute)}
+.plist{max-height:40vh;overflow:auto}
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
+.toast.on{opacity:1}
+</style>
+</head>
+<body>
+<main>
+<header>
+<svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" fill="#f4c430"/><path d="M96 150h320v70H96zM96 250h200v70H96z" fill="#16181b"/></svg>
+<h1>Cut List</h1>
+<button class="proj" id="projBtn" type="button">Projects</button>
+</header>
+
+<div class="card">
+<div class="hd"><h2>Stock board</h2>
+<div class="seg" id="unit" role="group" aria-label="Unit"><button type="button" aria-pressed="true">mm</button><button type="button" aria-pressed="false">cm</button><button type="button" aria-pressed="false">in</button></div></div>
+<div class="two">
+<div class="f"><span>Length</span><input id="stock" type="number" inputmode="decimal" min="0" step="any" value="2400"><i class="u">mm</i></div>
+<div class="f"><span>Saw kerf</span><input id="kerf" type="number" inputmode="decimal" min="0" step="any" value="3"><i class="u">mm</i></div>
+</div>
+</div>
+
+<div class="card">
+<div class="hd"><h2>Parts needed</h2><span class="hint" id="count"></span></div>
+<div id="parts"></div>
+<button class="add" id="add" type="button">+ Add part</button>
+</div>
+
+<div class="card" id="res" hidden aria-live="polite"></div>
+</main>
+
+<dialog id="dlg" aria-label="Projects">
+<div class="hd"><h2>Projects</h2><button class="del" type="button" id="dclose" aria-label="Close">✕</button></div>
+<div class="sv"><div class="f"><span>Project name</span><input id="pname" type="text" placeholder="Kitchen shelves" maxlength="40"></div><button class="pill" id="psave" type="button">Save</button></div>
+<div class="plist" id="plist"></div>
+</dialog>
+<div class="toast" id="toast" role="status"></div>
+<div class="dock" id="dock"><div><strong id="sum"></strong><a href="#res">View boards</a></div></div>
+
+<script>
+const $=id=>document.getElementById(id),KEY="cutlist-v2";
+let lastText="",parts=[{len:800,qty:4},{len:450,qty:6}],unit="mm";
+const fmt=n=>(Math.round(n*10)/10).toString();
+
+function save(){try{localStorage.setItem(KEY,JSON.stringify({parts,unit,stock:$("stock").value,kerf:$("kerf").value}))}catch(e){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s){parts=s.parts;unit=s.unit;$("stock").value=s.stock;$("kerf").value=s.kerf}}catch(e){}}
+
+function setUnit(u){unit=u;[...$("unit").children].forEach(b=>b.setAttribute("aria-pressed",b.textContent===u));document.querySelectorAll(".u").forEach(e=>e.textContent=u);}
+
+function render(focusLast){
+  $("parts").innerHTML=parts.length?"":'<div class="empty">No parts yet. Add the pieces you need to cut.</div>';
+  parts.forEach((p,i)=>{
+    const r=document.createElement("div");r.className="part";
+    r.innerHTML=`<div class="f"><span>Length</span><input type="number" inputmode="decimal" min="0" step="any" value="${p.len}" data-i="${i}" aria-label="Part ${i+1} length"><i class="u">${unit}</i></div>
+    <div class="step"><button type="button" data-d="-1" data-i="${i}" aria-label="Fewer">−</button><b>${p.qty}</b><button type="button" data-d="1" data-i="${i}" aria-label="More">+</button></div>
+    <button class="del" type="button" data-rm="${i}" aria-label="Remove part ${i+1}">✕</button>`;
+    $("parts").appendChild(r);
+  });
+  if(focusLast){const l=$("parts").querySelectorAll("input");l[l.length-1]?.focus()}
+  calc();
+}
+
+function calc(){
+  save();
+  const stock=+$("stock").value,kerf=+$("kerf").value||0,res=$("res"),dock=$("dock");
+  const list=[];parts.forEach(p=>{for(let n=0;n<(+p.qty||0);n++)if(+p.len>0)list.push(+p.len)});
+  $("count").textContent=list.length?list.length+" pieces":"";
+  const stop=m=>{res.hidden=!m;res.innerHTML=m?`<p class="err">${m}</p>`:"";dock.classList.remove("on")};
+  if(!(stock>0))return stop("Enter a board length.");
+  if(!list.length){res.hidden=true;dock.classList.remove("on");return}
+  const big=Math.max(...list);
+  if(big>stock)return stop(`A ${fmt(big)} ${unit} part is longer than the ${fmt(stock)} ${unit} board.`);
+  list.sort((a,b)=>b-a);
+  const boards=[];
+  for(const len of list){let b=boards.find(b=>b.used+len<=stock);if(!b){b={used:0,cuts:[]};boards.push(b)}b.cuts.push(len);b.used+=len+kerf}
+  const used=list.reduce((a,b)=>a+b,0),waste=100*(1-used/(boards.length*stock));
+  let h=`<div class="hd"><h2>Result</h2><button class="pill" type="button" data-share>Share list</button></div><div class="stats">
+  <div class="stat"><b>${boards.length}</b><small>boards</small></div>
+  <div class="stat"><b>${waste.toFixed(0)}%</b><small>waste</small></div>
+  <div class="stat"><b>${list.length}</b><small>pieces</small></div></div>`;
+  boards.forEach((b,i)=>{
+    const off=stock-b.cuts.reduce((a,c)=>a+c,0)-kerf*(b.cuts.length-1);
+    h+=`<div class="board"><div class="bh"><b>Board ${i+1}</b><span>offcut ${fmt(Math.max(0,off))} ${unit}</span></div>
+    <div class="bar" role="img" aria-label="Board ${i+1}: ${b.cuts.join(", ")}">${b.cuts.map(c=>`<div class="p" style="width:${c/stock*100}%">${c/stock>.07?fmt(c):""}</div>`).join("")}</div></div>`;
+  });
+  lastText=`Cut list: ${fmt(stock)} ${unit} boards, ${fmt(kerf)} ${unit} kerf\n${boards.length} boards, ${waste.toFixed(0)}% waste\n\n`+boards.map((b,i)=>`Board ${i+1}: ${b.cuts.map(fmt).join(" + ")}`).join("\n");
+  res.hidden=false;res.innerHTML=h;
+  $("sum").textContent=`${boards.length} board${boards.length>1?"s":""} · ${waste.toFixed(0)}% waste`;
+  dock.classList.add("on");
+}
+
+$("parts").addEventListener("input",e=>{const i=e.target.dataset.i;if(i!=null){parts[i].len=e.target.value;calc()}});
+$("parts").addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.rm!=null){parts.splice(t.dataset.rm,1);render()}
+  else if(t.dataset.d){const p=parts[t.dataset.i];p.qty=Math.max(1,(+p.qty||1)+ +t.dataset.d);render()}
+});
+$("add").onclick=()=>{parts.push({len:"",qty:1});render(true)};
+$("unit").addEventListener("click",e=>{if(e.target.tagName==="BUTTON"){setUnit(e.target.textContent);render()}});
+["stock","kerf"].forEach(id=>$(id).addEventListener("input",calc));
+const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const getP=()=>{try{return JSON.parse(localStorage.getItem("cutlist-projects"))||[]}catch(e){return[]}};
+const putP=a=>{try{localStorage.setItem("cutlist-projects",JSON.stringify(a))}catch(e){}};
+function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),1800)}
+function listP(){const a=getP();$("plist").innerHTML=a.length?a.map((p,i)=>`<div class="pr"><button class="po" type="button" data-open="${i}"><b>${esc(p.name)}</b><small>${p.parts.reduce((n,x)=>n+(+x.qty||0),0)} pieces · ${esc(String(p.stock))} ${p.unit} boards</small></button><button class="del" type="button" data-pdel="${i}" aria-label="Delete ${esc(p.name)}">✕</button></div>`).join(""):'<div class="empty">No saved projects yet. Name this one and tap Save.</div>'}
+$("projBtn").onclick=()=>{listP();$("dlg").showModal()};
+$("dclose").onclick=()=>$("dlg").close();
+$("dlg").addEventListener("click",e=>{if(e.target===$("dlg"))$("dlg").close()});
+$("psave").onclick=()=>{
+  const name=$("pname").value.trim()||"Untitled",a=getP(),item={name,parts:JSON.parse(JSON.stringify(parts)),unit,stock:$("stock").value,kerf:$("kerf").value},i=a.findIndex(x=>x.name===name);
+  i>=0?a[i]=item:a.unshift(item);putP(a);$("pname").value="";listP();toast("Saved "+name);
+};
+$("plist").addEventListener("click",e=>{
+  const t=e.target.closest("button");if(!t)return;const a=getP();
+  if(t.dataset.open!=null){const p=a[t.dataset.open];parts=p.parts;$("stock").value=p.stock;$("kerf").value=p.kerf;setUnit(p.unit);render();$("dlg").close();toast("Opened "+p.name)}
+  else if(t.dataset.pdel!=null){a.splice(t.dataset.pdel,1);putP(a);listP()}
+});
+$("res").addEventListener("click",async e=>{
+  if(!e.target.closest("[data-share]"))return;
+  try{if(navigator.share){await navigator.share({title:"Cut list",text:lastText})}else{await navigator.clipboard.writeText(lastText);toast("Copied to clipboard")}}
+  catch(err){if(err.name!=="AbortError"){try{await navigator.clipboard.writeText(lastText);toast("Copied to clipboard")}catch(_){toast("Could not share")}}}
+});
+load();setUnit(unit);render();
+if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
+</script>
+</body>
+</html>
