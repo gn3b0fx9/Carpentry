@@ -85,6 +85,16 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 160px)}
 .tr{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
 .tr span:last-child{text-align:right}
 .tr:last-of-type{border-bottom:0}
+#mount button{flex:1}
+.wi{display:flex;align-items:center;gap:8px;padding:10px 0;border-bottom:1px solid var(--line)}
+.wi .del{height:44px}
+.bd{flex:none;width:28px;height:28px;border-radius:50%;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:700;font-size:13px}
+.wt{flex:1;min-width:0}.wt small{display:block;color:var(--mute);font-size:13px}
+.sw{display:inline-block;width:10px;height:10px;border-radius:3px;margin:0 4px 0 8px;vertical-align:-1px}
+button:disabled{opacity:.45}
+@media print{.tabs,.dock,.proj,.toast,.np{display:none!important}body{padding:0}.card{box-shadow:none}}
+.tagk{flex:none;width:76px;font-size:13px;font-weight:650}
+.th{flex:none;width:56px;height:56px}
 </style>
 </head>
 <body>
@@ -133,11 +143,39 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 160px)}
 </div>
 <div class="card" id="sres" aria-live="polite"></div>
 </div>
+
+<div id="pg-wall" hidden>
+<div class="card np">
+<div class="hd"><h2>Wall</h2>
+<div class="seg" id="unit3" role="group" aria-label="Unit"><button type="button" aria-pressed="true">mm</button><button type="button" aria-pressed="false">cm</button><button type="button" aria-pressed="false">in</button></div></div>
+<div class="two">
+<div class="f"><span>Height</span><input id="wH" type="text" inputmode="decimal" autocomplete="off" value="2600"><i class="u">mm</i></div>
+<div class="f"><span>Width</span><input id="wW" type="text" inputmode="decimal" autocomplete="off" value="3000"><i class="u">mm</i></div>
+</div></div>
+<div class="card np" id="wForm">
+<div class="hd"><h2>Add furniture</h2><span class="hint" id="wFree"></span></div>
+<div class="f" style="margin-bottom:10px"><span>Name (optional)</span><input id="fN" type="text" maxlength="30" placeholder="Base cabinet" style="font-size:16px"></div>
+<div class="two">
+<div class="f"><span>Width</span><input id="fW" type="text" inputmode="decimal" autocomplete="off" value="750"><i class="u">mm</i></div>
+<div class="f"><span>Height</span><input id="fH" type="text" inputmode="decimal" autocomplete="off" value="600"><i class="u">mm</i></div>
+</div>
+<div class="seg" id="mount" role="group" aria-label="Mounting" style="margin:10px 0"><button type="button" data-m="f" aria-pressed="true">On floor</button><button type="button" data-m="c" aria-pressed="false">Ceiling-mounted</button></div>
+<h2 style="font-size:14px;margin:14px 0 2px">Inside (optional)</h2>
+<p class="hint" style="margin:0 0 8px">List from top to bottom. Leave a height empty to split the remaining space equally.</p>
+<div id="fSecs"></div>
+<div class="two" style="margin:8px 0 10px"><button class="add" type="button" data-addsec="d">+ Drawer</button><button class="add" type="button" data-addsec="s">+ Shelf space</button></div>
+<div class="f" id="fThick" hidden style="margin-bottom:10px"><span>Panel thickness</span><input id="fT" type="text" inputmode="decimal" autocomplete="off" value="18"><i class="u">mm</i></div>
+<button class="pill" id="wAdd" type="button" style="width:100%;min-height:48px">Add to wall</button>
+<p class="err" id="wMsg" hidden style="margin:10px 0 0"></p>
+</div>
+<div class="card" id="wPlan" aria-live="polite"></div>
+</div>
 </main>
 
 <nav class="tabs" aria-label="Pages">
 <button type="button" data-go="cut" aria-current="page"><svg viewBox="0 0 44 28" aria-hidden="true"><path d="M13 8h18M13 14h12M13 20h15"/></svg>Cut list</button>
 <button type="button" data-go="shelf"><svg viewBox="0 0 44 28" aria-hidden="true"><rect x="14" y="4" width="16" height="20" rx="1"/><path d="M14 11h16M14 17h16"/></svg>Shelves</button>
+<button type="button" data-go="wall"><svg viewBox="0 0 44 28" aria-hidden="true"><rect x="10" y="4" width="24" height="20" rx="1"/><path d="M10 12h24M22 12v12M16 4v8"/></svg>Wall</button>
 </nav>
 
 <dialog id="dlg" aria-label="Projects">
@@ -157,7 +195,7 @@ const fmt=n=>(Math.round(n*10)/10).toString();
 function save(){try{localStorage.setItem(KEY,JSON.stringify({parts,unit,stock:$("stock").value,kerf:$("kerf").value}))}catch(e){}}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s){parts=s.parts;unit=s.unit;$("stock").value=s.stock;$("kerf").value=s.kerf}}catch(e){}}
 
-function setUnit(u){unit=u;document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.textContent===u));document.querySelectorAll(".u").forEach(e=>e.textContent=u);}
+function setUnit(u){unit=u;document.querySelectorAll("[aria-label=Unit] button").forEach(b=>b.setAttribute("aria-pressed",b.textContent===u));document.querySelectorAll(".u").forEach(e=>e.textContent=u);}
 
 function render(focusLast){
   $("parts").innerHTML=parts.length?"":'<div class="empty">No parts yet. Add the pieces you need to cut.</div>';
@@ -212,11 +250,11 @@ const MM={mm:1,cm:10,in:25.4};
 function conv(v,from,to){const x=parseFloat(String(v).replace(",","."));if(isNaN(x))return v;const d=to==="mm"?1:3,y=x*MM[from]/MM[to];return String(Math.round(y*10**d)/10**d)}
 function changeUnit(u){
   if(u===unit)return;const from=unit;
-  ["stock","kerf","sH","sW","sD","sT","sP"].forEach(id=>{$(id).value=conv($(id).value,from,u)});
-  parts.forEach(p=>{p.len=conv(p.len,from,u)});
-  setUnit(u);render();shelfCalc();
+  ["stock","kerf","sH","sW","sD","sT","sP","wH","wW","fW","fH","fT"].forEach(id=>{$(id).value=conv($(id).value,from,u)});
+  parts.forEach(p=>{p.len=conv(p.len,from,u)});wItems.forEach(i=>{i.w=+conv(i.w,from,u);i.h=+conv(i.h,from,u);i.t=+conv(i.t||0,from,u);(i.secs||[]).forEach(z=>{if(z.h)z.h=+conv(z.h,from,u)})});fSecs.forEach(z=>{z.h=conv(z.h,from,u)});renderSecs();
+  setUnit(u);render();shelfCalc();wRender();
 }
-["unit","unit2"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.tagName==="BUTTON")changeUnit(e.target.textContent)}));
+["unit","unit2","unit3"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.tagName==="BUTTON")changeUnit(e.target.textContent)}));
 ["stock","kerf"].forEach(id=>$(id).addEventListener("input",calc));
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const LK="cutlist-projects";
@@ -249,9 +287,9 @@ $("res").addEventListener("click",async e=>{
 });
 
 function go(p){
-  $("pg-cut").hidden=p!=="cut";$("pg-shelf").hidden=p!=="shelf";
-  document.body.classList.toggle("onshelf",p==="shelf");
-  $("ttl").textContent=p==="cut"?"Cut list":"Shelf spacing";
+  ["cut","shelf","wall"].forEach(x=>$("pg-"+x).hidden=x!==p);
+  document.body.classList.toggle("onshelf",p!=="cut");
+  $("ttl").textContent={cut:"Cut list",shelf:"Shelf spacing",wall:"Wall plan"}[p];
   document.querySelectorAll(".tabs button").forEach(b=>b.dataset.go===p?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
   try{history.replaceState(null,"","#"+p)}catch(e){}
   scrollTo(0,0);
@@ -298,7 +336,147 @@ function shelfCalc(){
   out.innerHTML=h;
 }
 $("pg-shelf").addEventListener("input",shelfCalc);
-load();setUnit(unit);render();sLoad();shelfCalc();go(location.hash==="#shelf"?"shelf":"cut");
+
+const WK="cutlist-wall";
+let wItems=[],wMount="f";
+function wSave(){try{localStorage.setItem(WK,JSON.stringify({H:$("wH").value,W:$("wW").value,items:wItems}))}catch(e){}}
+function wLoad(){try{const v=JSON.parse(localStorage.getItem(WK));if(v){$("wH").value=v.H;$("wW").value=v.W;wItems=v.items||[]}}catch(e){}}
+
+function wallLayout(W,H,items){
+  const eps=Math.max(W*2e-4,.01),placed=[],bad=[];
+  for(const it of items){
+    const opp=placed.filter(p=>p.m!==it.m),cur=placed.filter(p=>p.m===it.m).reduce((a,p)=>Math.max(a,p.x+p.w),0);
+    const cands=[cur,...opp.map(p=>p.x+p.w).filter(x=>x>cur)].sort((a,b)=>a-b);
+    let x=null;
+    if(it.h<=H+eps)for(const c of cands){
+      if(c+it.w>W+eps)continue;
+      if(opp.every(o=>o.x+o.w<=c+eps||o.x>=c+it.w-eps||o.h+it.h<=H+eps)){x=c;break}
+    }
+    x===null?bad.push(it):placed.push({...it,x,y:it.m==="f"?H-it.h:0});
+  }
+  return{placed,bad,eps};
+}
+
+
+let fSecs=[];
+function renderSecs(){
+  $("fSecs").innerHTML=fSecs.map((z,i)=>`<div class="part"><span class="tagk">${z.k==="d"?"Drawer":"Shelf space"}</span><div class="f"><span>Height</span><input type="text" inputmode="decimal" autocomplete="off" placeholder="auto" value="${esc(String(z.h))}" data-si="${i}"><i class="u">${unit}</i></div><button class="del" type="button" data-sdel="${i}" aria-label="Remove section ${i+1}">✕</button></div>`).join("");
+  $("fThick").hidden=!fSecs.length;
+}
+function secLayout(secs,h,t){
+  const k=secs.length;if(!k)return{rows:[],off:[],left:0};
+  const eps=Math.max(h*2e-4,.01),fixed=secs.reduce((a,z)=>a+(z.h||0),0),autos=secs.filter(z=>!z.h).length,free=h-t*(k+1)-fixed;
+  if(free<-eps)return{err:`The inside sections need ${fmt(fixed+t*(k+1))} ${unit} (with panels) but the piece is ${fmt(h)} ${unit} high.`};
+  if(autos&&free<=eps)return{err:"No height left for the sections set to auto."};
+  const rows=secs.map(z=>({k:z.k,h:z.h||free/autos,auto:!z.h})),off=[];let p=t;
+  for(let j=k-1;j>=0;j--){off[j]=p;p+=rows[j].h+t}
+  return{rows,off,left:autos?0:(free>eps?free:0),eps};
+}
+function secLines(it){
+  const L=secLayout(it.secs||[],it.h,it.t||0);
+  if(!(it.secs||[]).length)return[];
+  if(L.err)return[L.err];
+  const a=[`Inside, top to bottom (panels ${fmt(it.t||0)} ${unit}):`];
+  L.rows.forEach((r,j)=>a.push(`${j+1}. ${r.k==="d"?"Drawer":"Shelf space"} ${fmt(r.h)}${r.auto?" (auto)":""} · starts ${fmt(L.off[j])} from bottom`));
+  if(L.left)a.push(`Unassigned height: ${fmt(L.left)} ${unit}`);
+  return a;
+}
+function secSvg(it,x,y,s){
+  const L=secLayout(it.secs||[],it.h,it.t||0);if(!L.rows||!L.rows.length)return"";
+  const ts=Math.max(1,(it.t||0)*s),w=it.w*s-2*ts;if(w<=0)return"";
+  let yy=y+ts,g="";
+  L.rows.forEach(r=>{const rh=r.h*s;
+    g+=`<rect x="${x+ts}" y="${yy}" width="${w}" height="${rh}" style="fill:${r.k==="d"?"var(--w2)":"var(--off)"};stroke:var(--ink);stroke-width:.6"/>`;
+    if(r.k==="d"&&rh>5){const hw=Math.min(9,w/5),cx=x+ts+w/2;g+=`<line x1="${cx-hw}" y1="${yy+rh/2}" x2="${cx+hw}" y2="${yy+rh/2}" style="stroke:#16181b;stroke-width:1.5"/>`}
+    yy+=rh+ts});
+  return g;
+}
+function thumbSvg(it){
+  const B=52,s=Math.min(B/it.w,B/it.h),w=it.w*s,h=it.h*s,x=(56-w)/2,y=(56-h)/2;
+  return `<svg viewBox="0 0 56 56" width="56" height="56" aria-hidden="true"><rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:${it.m==="f"?"var(--w1)":"var(--tape)"};stroke:var(--ink);stroke-width:1"/>${secSvg(it,x,y,s)}</svg>`;
+}
+
+function wallSvg(W,H,placed){
+  const vw=340,pl=20,pt=34,pr=56,pb=22,aw=vw-pl-pr;
+  let s=aw/W;if(H*s>440)s=440/H;
+  const ws=W*s,hs=H*s,x0=pl+(aw-ws)/2,y0=pt,vh=y0+hs+pb,st="stroke:var(--ink);stroke-width:1",dm="stroke:var(--mute);stroke-width:1",tx="fill:var(--mute);font:12px system-ui";
+  let g=`<rect x="${x0}" y="${y0}" width="${ws}" height="${hs}" style="fill:var(--off)"/>`;
+  placed.forEach((p,i)=>{
+    const x=x0+p.x*s,y=y0+p.y*s,w=p.w*s,h=p.h*s,n=wItems.findIndex(z=>z.id===p.id)+1;
+    g+=`<rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:${p.m==="f"?"var(--w1)":"var(--tape)"};${st}"/>`;
+    const inner=secSvg(p,x,y,s);g+=inner;
+    const ty=y+h/2,ok=!inner&&w>54&&h>34;
+    if(inner)g+=`<circle cx="${x+w/2}" cy="${ty}" r="9" style="fill:var(--card);${st}"/>`;
+    g+=`<text x="${x+w/2}" y="${ok?ty-2:ty+4}" text-anchor="middle" style="fill:${inner?"var(--ink)":"#16181b"};font:700 13px system-ui">${n}</text>`;
+    if(ok)g+=`<text x="${x+w/2}" y="${ty+13}" text-anchor="middle" style="fill:#16181b;font:11px system-ui">${fmt(p.w)}×${fmt(p.h)}</text>`;
+  });
+  g+=`<line x1="${x0-4}" y1="${y0}" x2="${x0+ws+4}" y2="${y0}" style="${st};stroke-width:3"/><line x1="${x0-4}" y1="${y0+hs}" x2="${x0+ws+4}" y2="${y0+hs}" style="${st};stroke-width:3"/>`;
+  g+=`<path d="M${x0} ${y0-10}v-8M${x0+ws} ${y0-10}v-8M${x0} ${y0-14}H${x0+ws}" style="${dm};fill:none"/><text x="${x0+ws/2}" y="${y0-20}" text-anchor="middle" style="${tx}">${fmt(W)}</text>`;
+  const xr=x0+ws+14;
+  g+=`<path d="M${xr-4} ${y0}h8M${xr-4} ${y0+hs}h8M${xr} ${y0}V${y0+hs}" style="${dm};fill:none"/><text transform="translate(${xr+16} ${y0+hs/2}) rotate(90)" text-anchor="middle" style="${tx}">${fmt(H)}</text>`;
+  return `<svg viewBox="0 0 ${vw} ${vh}" role="img" aria-label="Wall plan" style="width:100%;max-width:340px;display:block;margin:0 auto">${g}</svg>`;
+}
+
+let wText="";
+function wRender(){
+  wSave();
+  const W=N($("wW").value),H=N($("wH").value),out=$("wPlan");
+  if(!(W>0&&H>0)){out.innerHTML='<p class="err">Enter the wall height and width.</p>';$("wAdd").disabled=true;$("wFree").textContent="";return}
+  const r=wallLayout(W,H,wItems),eps=r.eps;
+  const used=m=>r.placed.filter(p=>p.m===m).reduce((a,p)=>a+p.w,0),fF=Math.max(0,W-used("f")),cF=Math.max(0,W-used("c"));
+  const full=fF<=eps&&cF<=eps;
+  $("wAdd").disabled=full;$("wFree").textContent=full?"Wall is full":`Free: floor ${fmt(fF)} · ceiling ${fmt(cF)} ${unit}`;
+  if(!wItems.length){out.innerHTML='<div class="empty">Add your first piece of furniture to see the plan.</div>';wText="";return}
+  const pos=p=>`Left edge ${fmt(p.x)} · right edge ${fmt(p.x+p.w)} · `+(p.m==="f"?"sits on the floor":`top at ceiling, bottom ${fmt(H-p.h)} from floor`);
+  let h=`<div class="hd"><h2>Plan</h2><span class="hint"><i class="sw" style="background:var(--w1)"></i>floor<i class="sw" style="background:var(--tape)"></i>ceiling</span></div>${wallSvg(W,H,r.placed)}
+  <div class="stats" style="margin-top:14px"><div class="stat"><b>${wItems.length}</b><small>pieces</small></div><div class="stat"><b>${fmt(fF)}</b><small>free, floor</small></div><div class="stat"><b>${fmt(cF)}</b><small>free, ceiling</small></div></div>`;
+  let t=`Wall plan: ${fmt(W)} wide × ${fmt(H)} high (${unit})\n\n`;
+  wItems.forEach((it,i)=>{
+    const p=r.placed.find(z=>z.id===it.id),sl=secLines(it);
+    h+=`<div class="wi"><span class="bd">${i+1}</span><div class="th">${thumbSvg(it)}</div><div class="wt"><b>${esc(it.name)}</b><small>${fmt(it.w)} × ${fmt(it.h)} ${unit} · ${it.m==="f"?"floor":"ceiling-mounted"}</small>${p?`<small>${pos(p)}</small>`:'<small class="err">Does not fit the wall</small>'}${sl.map(x=>`<small>${esc(x)}</small>`).join("")}</div>
+    <button class="del" type="button" data-cp="${i}" aria-label="Duplicate ${esc(it.name)}">⧉</button><button class="del" type="button" data-rm="${i}" aria-label="Remove ${esc(it.name)}">✕</button></div>`;
+    t+=`${i+1}. ${it.name}: ${fmt(it.w)} × ${fmt(it.h)} (${it.m==="f"?"floor":"ceiling-mounted"})${p?`\n   ${pos(p)}`:"\n   DOES NOT FIT"}\n`+sl.map(x=>"   "+x+"\n").join("");
+  });
+  wText=t;
+  h+=`<div class="np" style="display:flex;gap:8px;margin-top:14px"><button class="pill" type="button" data-wshare style="flex:1;min-height:48px">Share plan</button><button class="pill" type="button" data-wprint style="flex:1;min-height:48px">Print</button></div>`;
+  out.innerHTML=h;
+}
+
+function tryAdd(it){
+  const W=N($("wW").value),H=N($("wH").value),msg=$("wMsg");
+  const say=t=>{msg.textContent=t;msg.hidden=!t;if(t)toast(t)};
+  if(!(W>0&&H>0))return say("Enter the wall size first.");
+  if(!(it.w>0&&it.h>0))return say("Enter the furniture width and height.");
+  if(it.w>W)return say(`Too wide: the wall is ${fmt(W)} ${unit} wide.`);
+  if(it.h>H)return say(`Too tall: the wall is ${fmt(H)} ${unit} high.`);
+  const secs=(it.secs||[]).map(z=>({k:z.k,h:z.h>0?z.h:null})),t=it.t>0?it.t:0,SL=secLayout(secs,it.h,t);
+  if(SL.err)return say(SL.err);
+  const cand={id:"w"+Date.now()+Math.random().toString(36).slice(2,5),name:it.name||("Unit "+(wItems.length+1)),w:it.w,h:it.h,m:it.m,secs,t};
+  const r=wallLayout(W,H,[...wItems,cand]);
+  if(r.bad.some(b=>b.id===cand.id)){
+    const used=wItems.filter(x=>x.m===it.m).reduce((a,x)=>a+x.w,0);
+    return say(W-used<it.w-r.eps?`No space left: only ${fmt(Math.max(0,W-used))} ${unit} free in the ${it.m==="f"?"floor":"ceiling"} row.`:"Does not fit: together with the pieces above or below it, it is taller than the wall.");
+  }
+  wItems.push(cand);say("");$("fN").value="";wRender();
+}
+$("wAdd").onclick=()=>tryAdd({name:$("fN").value.trim(),w:N($("fW").value),h:N($("fH").value),m:wMount,secs:fSecs.map(z=>({k:z.k,h:N(z.h)})),t:N($("fT").value)});
+$("wForm").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.addsec){fSecs.push({k:b.dataset.addsec,h:""});renderSecs()}
+  else if(b.dataset.sdel!=null){fSecs.splice(b.dataset.sdel,1);renderSecs()}});
+$("fSecs").addEventListener("input",e=>{const i=e.target.dataset.si;if(i!=null)fSecs[i].h=e.target.value});
+$("mount").addEventListener("click",e=>{const b=e.target.closest("button");if(!b)return;wMount=b.dataset.m;[...$("mount").children].forEach(x=>x.setAttribute("aria-pressed",x===b))});
+["wH","wW"].forEach(id=>$(id).addEventListener("input",()=>{$("wMsg").hidden=true;wRender()}));
+$("wPlan").addEventListener("click",async e=>{
+  const b=e.target.closest("button");if(!b)return;
+  if(b.dataset.rm!=null){wItems.splice(b.dataset.rm,1);$("wMsg").hidden=true;wRender()}
+  else if(b.dataset.cp!=null){const it=wItems[b.dataset.cp];tryAdd({name:it.name,w:it.w,h:it.h,m:it.m,secs:it.secs,t:it.t})}
+  else if(b.dataset.wprint!=null)print();
+  else if(b.dataset.wshare!=null){
+    try{if(navigator.share)await navigator.share({title:"Wall plan",text:wText});else{await navigator.clipboard.writeText(wText);toast("Copied to clipboard")}}
+    catch(err){if(err.name!=="AbortError"){try{await navigator.clipboard.writeText(wText);toast("Copied to clipboard")}catch(_){toast("Could not share")}}}
+  }
+});
+load();setUnit(unit);render();sLoad();shelfCalc();wLoad();renderSecs();wRender();go(["#shelf","#wall"].includes(location.hash)?location.hash.slice(1):"cut");
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
 </script>
 </body>
