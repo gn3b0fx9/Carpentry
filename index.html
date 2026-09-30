@@ -100,8 +100,8 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 160px)}
 <div class="hd"><h2>Stock board</h2>
 <div class="seg" id="unit" role="group" aria-label="Unit"><button type="button" aria-pressed="true">mm</button><button type="button" aria-pressed="false">cm</button><button type="button" aria-pressed="false">in</button></div></div>
 <div class="two">
-<div class="f"><span>Length</span><input id="stock" type="number" inputmode="decimal" min="0" step="any" value="2400"><i class="u">mm</i></div>
-<div class="f"><span>Saw kerf</span><input id="kerf" type="number" inputmode="decimal" min="0" step="any" value="3"><i class="u">mm</i></div>
+<div class="f"><span>Length</span><input id="stock" type="text" inputmode="decimal" autocomplete="off" value="2400"><i class="u">mm</i></div>
+<div class="f"><span>Saw kerf</span><input id="kerf" type="text" inputmode="decimal" autocomplete="off" value="3"><i class="u">mm</i></div>
 </div>
 </div>
 
@@ -119,14 +119,14 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 160px)}
 <div class="hd"><h2>Cabinet size</h2>
 <div class="seg" id="unit2" role="group" aria-label="Unit"><button type="button" aria-pressed="true">mm</button><button type="button" aria-pressed="false">cm</button><button type="button" aria-pressed="false">in</button></div></div>
 <div class="g3">
-<div class="f"><span>Height</span><input id="sH" type="number" inputmode="decimal" min="0" step="any" value="1800"><i class="u">mm</i></div>
-<div class="f"><span>Width</span><input id="sW" type="number" inputmode="decimal" min="0" step="any" value="800"><i class="u">mm</i></div>
-<div class="f"><span>Depth</span><input id="sD" type="number" inputmode="decimal" min="0" step="any" value="350"><i class="u">mm</i></div>
+<div class="f"><span>Height</span><input id="sH" type="text" inputmode="decimal" autocomplete="off" value="1800"><i class="u">mm</i></div>
+<div class="f"><span>Width</span><input id="sW" type="text" inputmode="decimal" autocomplete="off" value="800"><i class="u">mm</i></div>
+<div class="f"><span>Depth</span><input id="sD" type="text" inputmode="decimal" autocomplete="off" value="350"><i class="u">mm</i></div>
 </div>
 <div class="g3">
-<div class="f"><span>Panel thickness</span><input id="sT" type="number" inputmode="decimal" min="0" step="any" value="18"><i class="u">mm</i></div>
+<div class="f"><span>Panel thickness</span><input id="sT" type="text" inputmode="decimal" autocomplete="off" value="18"><i class="u">mm</i></div>
 <div class="f"><span>Shelves</span><input id="sN" type="number" inputmode="numeric" min="0" step="1" value="4"></div>
-<div class="f"><span>Plinth</span><input id="sP" type="number" inputmode="decimal" min="0" step="any" value="0"><i class="u">mm</i></div>
+<div class="f"><span>Plinth</span><input id="sP" type="text" inputmode="decimal" autocomplete="off" value="0"><i class="u">mm</i></div>
 </div>
 <label class="chk"><input type="checkbox" id="cTop" checked>Top panel</label>
 <label class="chk"><input type="checkbox" id="cBot" checked>Bottom panel</label>
@@ -150,6 +150,7 @@ body{padding-bottom:calc(env(safe-area-inset-bottom) + 160px)}
 
 <script>
 const $=id=>document.getElementById(id),KEY="cutlist-v2";
+const N=v=>{const x=parseFloat(String(v).replace(",","."));return isNaN(x)?0:x};
 let lastText="",parts=[{len:800,qty:4},{len:450,qty:6}],unit="mm";
 const fmt=n=>(Math.round(n*10)/10).toString();
 
@@ -162,7 +163,7 @@ function render(focusLast){
   $("parts").innerHTML=parts.length?"":'<div class="empty">No parts yet. Add the pieces you need to cut.</div>';
   parts.forEach((p,i)=>{
     const r=document.createElement("div");r.className="part";
-    r.innerHTML=`<div class="f"><span>Length</span><input type="number" inputmode="decimal" min="0" step="any" value="${p.len}" data-i="${i}" aria-label="Part ${i+1} length"><i class="u">${unit}</i></div>
+    r.innerHTML=`<div class="f"><span>Length</span><input type="text" inputmode="decimal" autocomplete="off" value="${p.len}" data-i="${i}" aria-label="Part ${i+1} length"><i class="u">${unit}</i></div>
     <div class="step"><button type="button" data-d="-1" data-i="${i}" aria-label="Fewer">−</button><b>${p.qty}</b><button type="button" data-d="1" data-i="${i}" aria-label="More">+</button></div>
     <button class="del" type="button" data-rm="${i}" aria-label="Remove part ${i+1}">✕</button>`;
     $("parts").appendChild(r);
@@ -173,8 +174,8 @@ function render(focusLast){
 
 function calc(){
   save();
-  const stock=+$("stock").value,kerf=+$("kerf").value||0,res=$("res"),dock=$("dock");
-  const list=[];parts.forEach(p=>{for(let n=0;n<(+p.qty||0);n++)if(+p.len>0)list.push(+p.len)});
+  const stock=N($("stock").value),kerf=N($("kerf").value),res=$("res"),dock=$("dock");
+  const list=[];parts.forEach(p=>{for(let n=0;n<(+p.qty||0);n++)if(N(p.len)>0)list.push(N(p.len))});
   $("count").textContent=list.length?list.length+" pieces":"";
   const stop=m=>{res.hidden=!m;res.innerHTML=m?`<p class="err">${m}</p>`:"";dock.classList.remove("on")};
   if(!(stock>0))return stop("Enter a board length.");
@@ -207,7 +208,15 @@ $("parts").addEventListener("click",e=>{
   else if(t.dataset.d){const p=parts[t.dataset.i];p.qty=Math.max(1,(+p.qty||1)+ +t.dataset.d);render()}
 });
 $("add").onclick=()=>{parts.push({len:"",qty:1});render(true)};
-["unit","unit2"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.tagName==="BUTTON"){setUnit(e.target.textContent);render();shelfCalc()}}));
+const MM={mm:1,cm:10,in:25.4};
+function conv(v,from,to){const x=parseFloat(String(v).replace(",","."));if(isNaN(x))return v;const d=to==="mm"?1:3,y=x*MM[from]/MM[to];return String(Math.round(y*10**d)/10**d)}
+function changeUnit(u){
+  if(u===unit)return;const from=unit;
+  ["stock","kerf","sH","sW","sD","sT","sP"].forEach(id=>{$(id).value=conv($(id).value,from,u)});
+  parts.forEach(p=>{p.len=conv(p.len,from,u)});
+  setUnit(u);render();shelfCalc();
+}
+["unit","unit2"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.tagName==="BUTTON")changeUnit(e.target.textContent)}));
 ["stock","kerf"].forEach(id=>$(id).addEventListener("input",calc));
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const LK="cutlist-projects";
@@ -250,7 +259,6 @@ function go(p){
 document.querySelector(".tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)go(b.dataset.go)});
 
 const SK="cutlist-shelf",SIDS=["sH","sW","sD","sT","sN","sP"],CIDS=["cTop","cBot"];
-let shelfParts=null;
 function sLoad(){try{const v=JSON.parse(localStorage.getItem(SK));if(v){SIDS.forEach(i=>{if(v[i]!=null)$(i).value=v[i]});CIDS.forEach(i=>{if(v[i]!=null)$(i).checked=v[i]})}}catch(e){}}
 function sSave(){try{const v={};SIDS.forEach(i=>v[i]=$(i).value);CIDS.forEach(i=>v[i]=$(i).checked);localStorage.setItem(SK,JSON.stringify(v))}catch(e){}}
 
@@ -275,31 +283,21 @@ function cabSvg(H,W,t,n,P,top,bot,gap){
 }
 
 function shelfCalc(){
-  sSave();shelfParts=null;
-  const H=+$("sH").value,W=+$("sW").value,D=+$("sD").value,t=+$("sT").value,n=Math.floor(+$("sN").value),P=+$("sP").value||0,top=$("cTop").checked,bot=$("cBot").checked,out=$("sres");
+  sSave();
+  const H=N($("sH").value),W=N($("sW").value),D=N($("sD").value),t=N($("sT").value),n=Math.floor(+$("sN").value),P=N($("sP").value),top=$("cTop").checked,bot=$("cBot").checked,out=$("sres");
   const err=m=>{out.innerHTML=`<p class="err">${m}</p>`};
   if(!(H>0&&W>0&&D>0&&t>0)||!(n>=0))return err("Enter height, width, depth, thickness and number of shelves.");
   if(2*t>=W)return err("The side panels are wider than the cabinet.");
   const body=H-P,inner=body-(top?t:0)-(bot?t:0),gap=(inner-n*t)/(n+1);
   if(gap<=0)return err(`Shelves don't fit. The panels need ${fmt(n*t)} ${unit} but only ${fmt(inner)} ${unit} is free inside.`);
-  const horiz=W-2*t,cnt=n+(top?1:0)+(bot?1:0);
-  shelfParts={side:body,horiz,cnt};
+  const horiz=W-2*t;
   let h=`<div class="hd"><h2>Preview</h2><span class="hint">front view</span></div>${cabSvg(H,W,t,n,P,top,bot,gap)}
   <div class="stats" style="margin-top:14px"><div class="stat"><b>${fmt(gap)}</b><small>gap, ${unit}</small></div><div class="stat"><b>${n}</b><small>shelves</small></div><div class="stat"><b>${fmt(horiz)}</b><small>shelf length</small></div></div>`;
   if(n>0){h+=`<h2 style="margin-bottom:4px">Mark from the inside bottom</h2>`;
     for(let k=1;k<=n;k++){const u=k*gap+(k-1)*t;h+=`<div class="tr"><span>Shelf ${k}</span><span>underside <b>${fmt(u)}</b> · top ${fmt(u+t)}</span></div>`}}
-  h+=`<h2 style="margin:16px 0 4px">Panels to cut (${unit})</h2>
-  <div class="tr"><span>Sides ×2</span><span>${fmt(body)} × ${fmt(D)}</span></div>
-  <div class="tr"><span>Horizontal ×${cnt}</span><span>${fmt(horiz)} × ${fmt(D)}</span></div>
-  <button class="pill" type="button" data-send style="width:100%;min-height:48px;margin-top:14px">Send lengths to cut list</button>`;
   out.innerHTML=h;
 }
 $("pg-shelf").addEventListener("input",shelfCalc);
-$("sres").addEventListener("click",e=>{
-  if(!e.target.closest("[data-send]")||!shelfParts)return;
-  parts.push({len:fmt(shelfParts.side),qty:2});if(shelfParts.cnt>0)parts.push({len:fmt(shelfParts.horiz),qty:shelfParts.cnt});
-  render();go("cut");toast("Added to cut list");
-});
 load();setUnit(unit);render();sLoad();shelfCalc();go(location.hash==="#shelf"?"shelf":"cut");
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
 </script>
