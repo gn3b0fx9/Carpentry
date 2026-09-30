@@ -69,22 +69,39 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 .plist{max-height:40vh;overflow:auto}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom) + 84px);transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:10px;font-weight:600;opacity:0;pointer-events:none;transition:opacity .2s;z-index:9}
 .toast.on{opacity:1}
+body{padding-bottom:calc(env(safe-area-inset-bottom) + 160px)}
+.dock{bottom:calc(env(safe-area-inset-bottom) + 57px);padding-bottom:10px}
+.toast{bottom:calc(env(safe-area-inset-bottom) + 130px)}
+.onshelf .dock{display:none!important}
+.onshelf .proj{display:none}
+.tabs{position:fixed;left:0;right:0;bottom:0;display:flex;background:var(--card);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom);z-index:5}
+.tabs button{flex:1;min-height:56px;border:0;background:none;color:var(--mute);font:inherit;font-size:12px;font-weight:650;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px}
+.tabs svg{width:44px;height:28px;padding:2px 10px;border-radius:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.tabs button[aria-current=page]{color:var(--ink)}
+.tabs button[aria-current=page] svg{background:var(--tape);color:var(--tape-ink)}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:10px}
+.chk{display:flex;align-items:center;gap:10px;min-height:44px;font-size:15px}
+.chk input{width:22px;height:22px;min-height:22px;padding:0;accent-color:var(--pine,#16181b)}
+.tr{display:flex;justify-content:space-between;gap:12px;padding:9px 0;border-bottom:1px solid var(--line);font-size:15px}
+.tr span:last-child{text-align:right}
+.tr:last-of-type{border-bottom:0}
 </style>
 </head>
 <body>
 <main>
 <header>
 <svg viewBox="0 0 512 512" aria-hidden="true"><rect width="512" height="512" fill="#f4c430"/><path d="M96 150h320v70H96zM96 250h200v70H96z" fill="#16181b"/></svg>
-<h1>Cut List</h1>
+<h1 id="ttl">Cut list</h1>
 <button class="proj" id="projBtn" type="button">Projects</button>
 </header>
+<div id="pg-cut">
 
 <div class="card">
 <div class="hd"><h2>Stock board</h2>
 <div class="seg" id="unit" role="group" aria-label="Unit"><button type="button" aria-pressed="true">mm</button><button type="button" aria-pressed="false">cm</button><button type="button" aria-pressed="false">in</button></div></div>
 <div class="two">
-<div class="f"><span>Length</span><input id="stock" type="number" inputmode="decimal" min="0" step="any" value="2400"><i class="u">mm</i></div>
-<div class="f"><span>Saw kerf</span><input id="kerf" type="number" inputmode="decimal" min="0" step="any" value="3"><i class="u">mm</i></div>
+<div class="f"><span>Length</span><input id="stock" type="text" inputmode="decimal" autocomplete="off" value="2400"><i class="u">mm</i></div>
+<div class="f"><span>Saw kerf</span><input id="kerf" type="text" inputmode="decimal" autocomplete="off" value="3"><i class="u">mm</i></div>
 </div>
 </div>
 
@@ -95,7 +112,33 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 </div>
 
 <div class="card" id="res" hidden aria-live="polite"></div>
+</div>
+
+<div id="pg-shelf" hidden>
+<div class="card">
+<div class="hd"><h2>Cabinet size</h2>
+<div class="seg" id="unit2" role="group" aria-label="Unit"><button type="button" aria-pressed="true">mm</button><button type="button" aria-pressed="false">cm</button><button type="button" aria-pressed="false">in</button></div></div>
+<div class="g3">
+<div class="f"><span>Height</span><input id="sH" type="text" inputmode="decimal" autocomplete="off" value="1800"><i class="u">mm</i></div>
+<div class="f"><span>Width</span><input id="sW" type="text" inputmode="decimal" autocomplete="off" value="800"><i class="u">mm</i></div>
+<div class="f"><span>Depth</span><input id="sD" type="text" inputmode="decimal" autocomplete="off" value="350"><i class="u">mm</i></div>
+</div>
+<div class="g3">
+<div class="f"><span>Panel thickness</span><input id="sT" type="text" inputmode="decimal" autocomplete="off" value="18"><i class="u">mm</i></div>
+<div class="f"><span>Shelves</span><input id="sN" type="number" inputmode="numeric" min="0" step="1" value="4"></div>
+<div class="f"><span>Plinth</span><input id="sP" type="text" inputmode="decimal" autocomplete="off" value="0"><i class="u">mm</i></div>
+</div>
+<label class="chk"><input type="checkbox" id="cTop" checked>Top panel</label>
+<label class="chk"><input type="checkbox" id="cBot" checked>Bottom panel</label>
+</div>
+<div class="card" id="sres" aria-live="polite"></div>
+</div>
 </main>
+
+<nav class="tabs" aria-label="Pages">
+<button type="button" data-go="cut" aria-current="page"><svg viewBox="0 0 44 28" aria-hidden="true"><path d="M13 8h18M13 14h12M13 20h15"/></svg>Cut list</button>
+<button type="button" data-go="shelf"><svg viewBox="0 0 44 28" aria-hidden="true"><rect x="14" y="4" width="16" height="20" rx="1"/><path d="M14 11h16M14 17h16"/></svg>Shelves</button>
+</nav>
 
 <dialog id="dlg" aria-label="Projects">
 <div class="hd"><h2>Projects</h2><button class="del" type="button" id="dclose" aria-label="Close">✕</button></div>
@@ -107,19 +150,20 @@ dialog::backdrop{background:rgba(0,0,0,.45)}
 
 <script>
 const $=id=>document.getElementById(id),KEY="cutlist-v2";
+const N=v=>{const x=parseFloat(String(v).replace(",","."));return isNaN(x)?0:x};
 let lastText="",parts=[{len:800,qty:4},{len:450,qty:6}],unit="mm";
 const fmt=n=>(Math.round(n*10)/10).toString();
 
 function save(){try{localStorage.setItem(KEY,JSON.stringify({parts,unit,stock:$("stock").value,kerf:$("kerf").value}))}catch(e){}}
 function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s){parts=s.parts;unit=s.unit;$("stock").value=s.stock;$("kerf").value=s.kerf}}catch(e){}}
 
-function setUnit(u){unit=u;[...$("unit").children].forEach(b=>b.setAttribute("aria-pressed",b.textContent===u));document.querySelectorAll(".u").forEach(e=>e.textContent=u);}
+function setUnit(u){unit=u;document.querySelectorAll(".seg button").forEach(b=>b.setAttribute("aria-pressed",b.textContent===u));document.querySelectorAll(".u").forEach(e=>e.textContent=u);}
 
 function render(focusLast){
   $("parts").innerHTML=parts.length?"":'<div class="empty">No parts yet. Add the pieces you need to cut.</div>';
   parts.forEach((p,i)=>{
     const r=document.createElement("div");r.className="part";
-    r.innerHTML=`<div class="f"><span>Length</span><input type="number" inputmode="decimal" min="0" step="any" value="${p.len}" data-i="${i}" aria-label="Part ${i+1} length"><i class="u">${unit}</i></div>
+    r.innerHTML=`<div class="f"><span>Length</span><input type="text" inputmode="decimal" autocomplete="off" value="${p.len}" data-i="${i}" aria-label="Part ${i+1} length"><i class="u">${unit}</i></div>
     <div class="step"><button type="button" data-d="-1" data-i="${i}" aria-label="Fewer">−</button><b>${p.qty}</b><button type="button" data-d="1" data-i="${i}" aria-label="More">+</button></div>
     <button class="del" type="button" data-rm="${i}" aria-label="Remove part ${i+1}">✕</button>`;
     $("parts").appendChild(r);
@@ -130,8 +174,8 @@ function render(focusLast){
 
 function calc(){
   save();
-  const stock=+$("stock").value,kerf=+$("kerf").value||0,res=$("res"),dock=$("dock");
-  const list=[];parts.forEach(p=>{for(let n=0;n<(+p.qty||0);n++)if(+p.len>0)list.push(+p.len)});
+  const stock=N($("stock").value),kerf=N($("kerf").value),res=$("res"),dock=$("dock");
+  const list=[];parts.forEach(p=>{for(let n=0;n<(+p.qty||0);n++)if(N(p.len)>0)list.push(N(p.len))});
   $("count").textContent=list.length?list.length+" pieces":"";
   const stop=m=>{res.hidden=!m;res.innerHTML=m?`<p class="err">${m}</p>`:"";dock.classList.remove("on")};
   if(!(stock>0))return stop("Enter a board length.");
@@ -164,7 +208,15 @@ $("parts").addEventListener("click",e=>{
   else if(t.dataset.d){const p=parts[t.dataset.i];p.qty=Math.max(1,(+p.qty||1)+ +t.dataset.d);render()}
 });
 $("add").onclick=()=>{parts.push({len:"",qty:1});render(true)};
-$("unit").addEventListener("click",e=>{if(e.target.tagName==="BUTTON"){setUnit(e.target.textContent);render()}});
+const MM={mm:1,cm:10,in:25.4};
+function conv(v,from,to){const x=parseFloat(String(v).replace(",","."));if(isNaN(x))return v;const d=to==="mm"?1:3,y=x*MM[from]/MM[to];return String(Math.round(y*10**d)/10**d)}
+function changeUnit(u){
+  if(u===unit)return;const from=unit;
+  ["stock","kerf","sH","sW","sD","sT","sP"].forEach(id=>{$(id).value=conv($(id).value,from,u)});
+  parts.forEach(p=>{p.len=conv(p.len,from,u)});
+  setUnit(u);render();shelfCalc();
+}
+["unit","unit2"].forEach(id=>$(id).addEventListener("click",e=>{if(e.target.tagName==="BUTTON")changeUnit(e.target.textContent)}));
 ["stock","kerf"].forEach(id=>$(id).addEventListener("input",calc));
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const LK="cutlist-projects";
@@ -195,7 +247,58 @@ $("res").addEventListener("click",async e=>{
   try{if(navigator.share){await navigator.share({title:"Cut list",text:lastText})}else{await navigator.clipboard.writeText(lastText);toast("Copied to clipboard")}}
   catch(err){if(err.name!=="AbortError"){try{await navigator.clipboard.writeText(lastText);toast("Copied to clipboard")}catch(_){toast("Could not share")}}}
 });
-load();setUnit(unit);render();
+
+function go(p){
+  $("pg-cut").hidden=p!=="cut";$("pg-shelf").hidden=p!=="shelf";
+  document.body.classList.toggle("onshelf",p==="shelf");
+  $("ttl").textContent=p==="cut"?"Cut list":"Shelf spacing";
+  document.querySelectorAll(".tabs button").forEach(b=>b.dataset.go===p?b.setAttribute("aria-current","page"):b.removeAttribute("aria-current"));
+  try{history.replaceState(null,"","#"+p)}catch(e){}
+  scrollTo(0,0);
+}
+document.querySelector(".tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)go(b.dataset.go)});
+
+const SK="cutlist-shelf",SIDS=["sH","sW","sD","sT","sN","sP"],CIDS=["cTop","cBot"];
+function sLoad(){try{const v=JSON.parse(localStorage.getItem(SK));if(v){SIDS.forEach(i=>{if(v[i]!=null)$(i).value=v[i]});CIDS.forEach(i=>{if(v[i]!=null)$(i).checked=v[i]})}}catch(e){}}
+function sSave(){try{const v={};SIDS.forEach(i=>v[i]=$(i).value);CIDS.forEach(i=>v[i]=$(i).checked);localStorage.setItem(SK,JSON.stringify(v))}catch(e){}}
+
+function cabSvg(H,W,t,n,P,top,bot,gap){
+  const vw=340,vh=380,pl=24,pt=40,pr=60,pb=24,aw=vw-pl-pr,ah=vh-pt-pb;
+  const s=Math.min(aw/W,ah/H),ws=W*s,x0=pl+(aw-ws)/2,y0=pt,ts=Math.max(2.5,t*s),body=(H-P)*s,yb=y0+body,st="stroke:var(--ink);stroke-width:1";
+  const wood=(x,y,w,h)=>`<rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:var(--w1);${st}"/>`;
+  let g=`<rect x="${x0+ts}" y="${y0}" width="${ws-2*ts}" height="${body}" style="fill:var(--off)"/>`;
+  g+=wood(x0,y0,ts,body)+wood(x0+ws-ts,y0,ts,body);
+  if(top)g+=wood(x0+ts,y0,ws-2*ts,ts);
+  if(bot)g+=wood(x0+ts,yb-ts,ws-2*ts,ts);
+  const yt=y0+(top?ts:0),yi=yb-(bot?ts:0),gs=((yi-yt)-n*ts)/(n+1);
+  for(let k=1;k<=n;k++)g+=wood(x0+ts,yi-k*gs-k*ts,ws-2*ts,ts);
+  if(gs>13)for(let j=0;j<=n;j++){const cy=yi-j*(gs+ts)-gs/2;g+=`<text x="${x0+ws/2}" y="${cy+4}" text-anchor="middle" style="fill:var(--ink);font:600 11px system-ui">${fmt(gap)}</text>`}
+  if(P>0)g+=`<rect x="${x0+ts}" y="${yb}" width="${ws-2*ts}" height="${P*s}" style="fill:var(--ink);opacity:.5"/>`;
+  const yf=y0+H*s,dm="stroke:var(--mute);stroke-width:1",tx="fill:var(--mute);font:12px system-ui";
+  g+=`<line x1="${x0-8}" y1="${yf}" x2="${x0+ws+8}" y2="${yf}" style="${st}"/>`;
+  g+=`<path d="M${x0} ${y0-12}v-8M${x0+ws} ${y0-12}v-8M${x0} ${y0-16}H${x0+ws}" style="${dm};fill:none"/><text x="${x0+ws/2}" y="${y0-22}" text-anchor="middle" style="${tx}">${fmt(W)}</text>`;
+  const xr=x0+ws+14;
+  g+=`<path d="M${xr-4} ${y0}h8M${xr-4} ${yf}h8M${xr} ${y0}V${yf}" style="${dm};fill:none"/><text transform="translate(${xr+16} ${(y0+yf)/2}) rotate(90)" text-anchor="middle" style="${tx}">${fmt(H)}</text>`;
+  return `<svg viewBox="0 0 ${vw} ${vh}" role="img" aria-label="Cabinet front view with ${n} shelves" style="width:100%;max-width:340px;display:block;margin:0 auto">${g}</svg>`;
+}
+
+function shelfCalc(){
+  sSave();
+  const H=N($("sH").value),W=N($("sW").value),D=N($("sD").value),t=N($("sT").value),n=Math.floor(+$("sN").value),P=N($("sP").value),top=$("cTop").checked,bot=$("cBot").checked,out=$("sres");
+  const err=m=>{out.innerHTML=`<p class="err">${m}</p>`};
+  if(!(H>0&&W>0&&D>0&&t>0)||!(n>=0))return err("Enter height, width, depth, thickness and number of shelves.");
+  if(2*t>=W)return err("The side panels are wider than the cabinet.");
+  const body=H-P,inner=body-(top?t:0)-(bot?t:0),gap=(inner-n*t)/(n+1);
+  if(gap<=0)return err(`Shelves don't fit. The panels need ${fmt(n*t)} ${unit} but only ${fmt(inner)} ${unit} is free inside.`);
+  const horiz=W-2*t;
+  let h=`<div class="hd"><h2>Preview</h2><span class="hint">front view</span></div>${cabSvg(H,W,t,n,P,top,bot,gap)}
+  <div class="stats" style="margin-top:14px"><div class="stat"><b>${fmt(gap)}</b><small>gap, ${unit}</small></div><div class="stat"><b>${n}</b><small>shelves</small></div><div class="stat"><b>${fmt(horiz)}</b><small>shelf length</small></div></div>`;
+  if(n>0){h+=`<h2 style="margin-bottom:4px">Mark from the inside bottom</h2>`;
+    for(let k=1;k<=n;k++){const u=k*gap+(k-1)*t;h+=`<div class="tr"><span>Shelf ${k}</span><span>underside <b>${fmt(u)}</b> · top ${fmt(u+t)}</span></div>`}}
+  out.innerHTML=h;
+}
+$("pg-shelf").addEventListener("input",shelfCalc);
+load();setUnit(unit);render();sLoad();shelfCalc();go(location.hash==="#shelf"?"shelf":"cut");
 if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
 </script>
 </body>
