@@ -167,21 +167,28 @@ $("add").onclick=()=>{parts.push({len:"",qty:1});render(true)};
 $("unit").addEventListener("click",e=>{if(e.target.tagName==="BUTTON"){setUnit(e.target.textContent);render()}});
 ["stock","kerf"].forEach(id=>$(id).addEventListener("input",calc));
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
-const getP=()=>{try{return JSON.parse(localStorage.getItem("cutlist-projects"))||[]}catch(e){return[]}};
-const putP=a=>{try{localStorage.setItem("cutlist-projects",JSON.stringify(a))}catch(e){}};
+const LK="cutlist-projects";
+const getL=()=>{try{return JSON.parse(localStorage.getItem(LK))||[]}catch(e){return[]}};
+const putL=a=>{try{localStorage.setItem(LK,JSON.stringify(a))}catch(e){}};
+let projects=getL();
+async function api(path,opt){const r=await fetch("/api/projects"+path,opt);if(!r.ok)throw new Error(r.status);return r.status===204?null:r.json()}
 function toast(m){const t=$("toast");t.textContent=m;t.classList.add("on");clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove("on"),1800)}
-function listP(){const a=getP();$("plist").innerHTML=a.length?a.map((p,i)=>`<div class="pr"><button class="po" type="button" data-open="${i}"><b>${esc(p.name)}</b><small>${p.parts.reduce((n,x)=>n+(+x.qty||0),0)} pieces · ${esc(String(p.stock))} ${p.unit} boards</small></button><button class="del" type="button" data-pdel="${i}" aria-label="Delete ${esc(p.name)}">✕</button></div>`).join(""):'<div class="empty">No saved projects yet. Name this one and tap Save.</div>'}
-$("projBtn").onclick=()=>{listP();$("dlg").showModal()};
+function listP(){$("plist").innerHTML=projects.length?projects.map((p,i)=>`<div class="pr"><button class="po" type="button" data-open="${i}"><b>${esc(p.name)}</b><small>${p.parts.reduce((n,x)=>n+(+x.qty||0),0)} pieces · ${esc(String(p.stock))} ${p.unit} boards</small></button><button class="del" type="button" data-pdel="${i}" aria-label="Delete ${esc(p.name)}">✕</button></div>`).join(""):'<div class="empty">No saved projects yet. Name this one and tap Save.</div>'}
+async function refreshP(){try{projects=await api("");putL(projects)}catch(e){projects=getL()}listP()}
+$("projBtn").onclick=()=>{listP();$("dlg").showModal();refreshP()};
 $("dclose").onclick=()=>$("dlg").close();
 $("dlg").addEventListener("click",e=>{if(e.target===$("dlg"))$("dlg").close()});
-$("psave").onclick=()=>{
-  const name=$("pname").value.trim()||"Untitled",a=getP(),item={name,parts:JSON.parse(JSON.stringify(parts)),unit,stock:$("stock").value,kerf:$("kerf").value},i=a.findIndex(x=>x.name===name);
-  i>=0?a[i]=item:a.unshift(item);putP(a);$("pname").value="";listP();toast("Saved "+name);
+$("psave").onclick=async()=>{
+  const name=$("pname").value.trim()||"Untitled",ex=projects.find(x=>x.name===name);
+  const item={id:ex?ex.id:(crypto.randomUUID?crypto.randomUUID():"p"+Date.now()),name,parts:JSON.parse(JSON.stringify(parts)),unit,stock:$("stock").value,kerf:$("kerf").value};
+  projects=[item,...projects.filter(x=>x.id!==item.id)];putL(projects);listP();$("pname").value="";
+  try{await api("/"+item.id,{method:"PUT",headers:{"Content-Type":"application/json"},body:JSON.stringify({name,data:{parts:item.parts,unit:item.unit,stock:item.stock,kerf:item.kerf}})});toast("Saved "+name)}
+  catch(e){toast("Saved on this device only")}
 };
-$("plist").addEventListener("click",e=>{
-  const t=e.target.closest("button");if(!t)return;const a=getP();
-  if(t.dataset.open!=null){const p=a[t.dataset.open];parts=p.parts;$("stock").value=p.stock;$("kerf").value=p.kerf;setUnit(p.unit);render();$("dlg").close();toast("Opened "+p.name)}
-  else if(t.dataset.pdel!=null){a.splice(t.dataset.pdel,1);putP(a);listP()}
+$("plist").addEventListener("click",async e=>{
+  const t=e.target.closest("button");if(!t)return;
+  if(t.dataset.open!=null){const p=projects[t.dataset.open];parts=JSON.parse(JSON.stringify(p.parts));$("stock").value=p.stock;$("kerf").value=p.kerf;setUnit(p.unit);render();$("dlg").close();toast("Opened "+p.name)}
+  else if(t.dataset.pdel!=null){const p=projects[t.dataset.pdel];projects.splice(t.dataset.pdel,1);putL(projects);listP();try{await api("/"+p.id,{method:"DELETE"})}catch(e){toast("Could not delete online")}}
 });
 $("res").addEventListener("click",async e=>{
   if(!e.target.closest("[data-share]"))return;

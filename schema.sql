@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS projects (
+  id TEXT PRIMARY KEY,
+  name TEXT NOT NULL,
+  data TEXT NOT NULL,
+  updated_at INTEGER NOT NULL
+);
